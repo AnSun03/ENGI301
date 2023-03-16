@@ -100,7 +100,8 @@ class Buzzer():
         """
         # !!! FIX !!! 
         PWM.stop(self.pin)
-        print("Stopping the buzzer")
+        
+        #print("Stopping the buzzer")
         # !!! FIX !!! 
 
         time.sleep(length)

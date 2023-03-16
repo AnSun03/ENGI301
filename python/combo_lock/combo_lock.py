@@ -113,9 +113,8 @@ class CombinationLock():
         self.servo          = SERVO.Servo(servo, default_position=SERVO_LOCK)
         self.display        = HT16K33.HT16K33(i2c_bus, i2c_address)
         self.music          = MUSIC.BuzzerMusic(buzzer)
-        self.debug          = True
+        self.debug          = False
      
-        
         self._setup()
     
     # End def
@@ -183,14 +182,14 @@ class CombinationLock():
                - Display value
                - Return value
         """
-        if self.debug:
-            print("show_analog_value()")
+        #if self.debug:
+            #print("show_analog_value()")
             
         # Read value from Potentiometer
         value = self.potentiometer.get_value()
 
         # Divide value by POT_DIVIDER
-        value = int( value / POT_DIVIDER )
+        value = int( value // POT_DIVIDER )
 
         # Update display (must be an integer)
         self.display.update(value)
@@ -222,12 +221,12 @@ class CombinationLock():
 
             # Wait for button press (show analog value)
             # !!! FIX !!!
-            value = self.button.wait_for_press(self.show_analog_value)[1]
+            value = self.button.wait_for_press(function = self.show_analog_value)[1]
 
             # Record Analog value
             combination[i] = value
-
-        print(combination)                       # For debug only
+        if self.debug:
+            print(combination)                       # For debug only
         
         return combination
 
@@ -258,7 +257,7 @@ class CombinationLock():
                 self.button.wait_for_press()
                 
                 # Get combination
-                combo_attempt = self.input_combination()
+                combination = self.input_combination()
                 
                 # Lock the lock
                 self.lock()
@@ -273,6 +272,7 @@ class CombinationLock():
             self.button.wait_for_press()
                 
             # Get combination
+            combo_attempt = self.input_combination()
 
             # Compare attempt against combination
             combo_pass = True

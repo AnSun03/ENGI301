@@ -326,7 +326,7 @@ class HT16K33():
                 self.set_digit_raw(i, LETTERS[char])
                 
                 # Set the display digit with the character value
-                print("Set char  = {0}".format(char)) # Remove when updating code
+                #print("Set char  = {0}".format(char)) # Remove when updating code
                 
             except:
                 raise ValueError("Character {0} not supported".format(char))
