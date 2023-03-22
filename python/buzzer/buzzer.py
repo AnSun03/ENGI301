@@ -81,15 +81,17 @@ class Buzzer():
             length    - Time in seconds (default 1.0 seconds)
             stop      - Stop the buzzer (will cause breaks between tones)
         """
+        #start_time = time.time()
         if frequency is not None:
-            # !!! FIX !!! 
             PWM.start(self.pin, 50, frequency)
-            # !!! FIX !!! 
-            
+        
         time.sleep(length)
         
         if (stop):
             self.stop()
+            
+        #print("--- %s seconds ---" % (time.time() - start_time))
+
         
     # End def
 
@@ -107,7 +109,20 @@ class Buzzer():
         time.sleep(length)
         
     # End def
-
+    def rhythm(self, frequency = 50, tempo = 1, length = 1.0):
+        period    = 1 / (tempo) 
+        buzzCount = int( length // period )
+        buzzDur   = 0.1; 
+        
+        for i in range(buzzCount):
+            start_time = time.time()
+            self.play(frequency, buzzDur, True)
+            while (time.time() - start_time) < period:
+                pass
+                
+            print("--- %s seconds ---" % (time.time() - start_time))
+        
+        
     
     def cleanup(self):
         """Stops the buzzer and cleans up the PWM.
@@ -129,12 +144,18 @@ if __name__ == '__main__':
     buzzer = Buzzer("P2_1")
     
     print("Play tone")
+    start_time = time.time()
     
+    buzzer.rhythm(60, 1, 10)
+    print("--- %s seconds ---" % (time.time() - start_time))
+
+    
+    """
     buzzer.play(440, 1.0, False)      # Play 440Hz for 1 second
     time.sleep(1.0)
     buzzer.play(880, 1.0, True)       # Play 880Hz for 1 second
     time.sleep(1.0)   
-
+    """
     buzzer.cleanup()
     
     print("Test Complete")
