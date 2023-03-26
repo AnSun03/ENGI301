@@ -199,8 +199,10 @@ class Display():
     
     def disp_text(self, text = "Hello World", alignment = None, fill = (0, 0, 0), clear = False):
 
-        (font_width, font_height) = self.font.getsize(text)
+        (x0,y0,x1,y1) = self.font.getbbox(text)
         
+        font_width  = x1-x0
+        font_height = y1-y0
         if clear:
             self.clear()
         

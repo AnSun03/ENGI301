@@ -50,3 +50,7 @@ config-pin P1_06 spi_cs
 config-pin P1_08 spi_sclk
 config-pin P1_10 spi
 config-pin P1_12 spi
+
+#Touch-Screen Driver
+config-pin P2_09 i2c
+config-pin P2_11 i2c
