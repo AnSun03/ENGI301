@@ -66,9 +66,11 @@ import Adafruit_BBIO.PWM as PWM
 
 class Buzzer():
     pin       = None
+    debug     = None
     
     def __init__(self, pin):
         self.pin = pin
+        self.debug = False
  
         # NOTE:  No other setup required
  
@@ -81,7 +83,9 @@ class Buzzer():
             length    - Time in seconds (default 1.0 seconds)
             stop      - Stop the buzzer (will cause breaks between tones)
         """
-        start_time = time.time()
+        
+        if self.debug:
+            start_time = time.time()
         
         if frequency is not None:
             # !!! FIX !!! 
@@ -93,8 +97,9 @@ class Buzzer():
         
         if (stop):
             self.stop()
-            
-        print("--- %s seconds ---" % (time.time() - start_time))
+         
+        if self.debug:  
+            print("--- %s seconds ---" % (time.time() - start_time))
 
         
     # End def
@@ -120,14 +125,20 @@ class Buzzer():
         
         
         print(period)
+        
+        self.play(frequency, 0)
 
         for i in range(buzzCount):
             start_time = time.time()
-            self.play(frequency, buzzDur, True)
+            PWM.set_duty_cycle(self.pin, 50)
+            time.sleep(buzzDur)
+            PWM.set_duty_cycle(self.pin, 0)
             while (time.time() - start_time) < period:
                 pass
                 
-            #print("--- %s seconds ---" % (time.time() - start_time))
+            print("--- %s seconds ---" % (time.time() - start_time))
+            
+        self.stop()
         
         
     
@@ -153,7 +164,7 @@ if __name__ == '__main__':
     print("Play tone")
     start_time = time.time()
     
-    buzzer.rhythm(60, 60, 10)
+    buzzer.rhythm(440, 360, 5)
     print("--- %s seconds ---" % (time.time() - start_time))
 
     

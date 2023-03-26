@@ -42,3 +42,11 @@ config-pin P2_08 gpio
 
 #Buzzer
 config-pin P2_01 pwm
+
+#LCD Display
+config-pin P1_02 gpio
+config-pin P1_04 gpio
+config-pin P1_06 spi_cs
+config-pin P1_08 spi_sclk
+config-pin P1_10 spi
+config-pin P1_12 spi

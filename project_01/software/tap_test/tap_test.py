@@ -34,6 +34,10 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """
 import time
 import threading
+import statistics 
+import math
+import numpy as np
+
 import buzzer as BUZZER
 import timer as TIMER
 import threaded_button as BUTTON
@@ -42,11 +46,13 @@ class TappingTest():
     buzzer  = None
     button  = None
     timer   = None
+    stop    = None
     
     def __init__(self, buzzer = "P2_1", button = "P2_2"):
         self.buzzer = BUZZER.Buzzer(buzzer)
         self.button = BUTTON.ThreadedButton(button)
         self.timer  = TIMER.Timer()
+        self.stop   = False
     
         self._startup()
     # End def
@@ -56,33 +62,59 @@ class TappingTest():
         
     # End def
     
+    def score(self, periods, times, tempo):
+        target = 1 / tempo * 60
+        delay = [(x-target)**2 for x in periods]
+        error = [(x-target) for x in periods]
+        count = [i for i in range(len(delay))]
+        
+        mean_error = statistics.mean(error)
+        rms   = math.sqrt(statistics.mean(delay))
+        stdev = statistics.stdev(periods)
+        r     = np.corrcoef(count, delay)[0,1]
+        
+        return mean_error, rms, stdev, r
+        
+    
     def run(self):
         """ Execute Main Program """
         
         #Display instructions and get user input 
         print("For the tapping test, please tap to the rhythm of the buzzer.")
         print("Press the button once to start:")
-        while(not self.button.is_pressed()):
-            pass
-        
-        #Start sequence
-        print("The test is beginning in 3...")
-        time.sleep(1)
-        print("                         2...")
-        time.sleep(1)
-        print("                         1...")
-        time.sleep(1)
-        
         
         self.button.start()
-        self.buzzer.rhythm(length = 10)
         
-        print(self.timer.get_times())
+        while True: 
+            while(not self.button.is_pressed()):
+                pass
+            
+            #Start sequence
+            print("The test is beginning in 3...")
+            time.sleep(1)
+            print("The test is beginning in 2...")
+            time.sleep(1)
+            print("The test is beginning in 1...")
+            time.sleep(1)
+            
+            tempo = 60
+            length = 10
+            self.buzzer.rhythm(tempo = tempo, length = length)
+            
+            periods = self.timer.get_periods()
+            times   = self.timer.get_times()
+            
+            print("Test Complete, here is your score (root mean square error, standard deviation, r coefficient)")
+            print(self.score(periods,times,tempo))
+            
+            time.sleep(2)
+            print("Press button again to restart test")
+            
+            while(not self.button.is_pressed()):
+                pass
         
-        print("Yay")
     # End def
-        
-        
+
     
     def cleanup(self):
         self.button.cleanup()
