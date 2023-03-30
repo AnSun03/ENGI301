@@ -32,6 +32,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import time
 import numpy as np
+import warnings
 
 class Timer():
     times = None
@@ -54,6 +55,15 @@ class Timer():
         
     def get_periods(self):
         return self.periods
+    
+    def start(self):
+        if not self.times:
+            self.start_time = time.time()
+       
+
+    def reset(self):
+        self.times   = []
+        self.periods = []
         
         
 if __name__ == '__main__':

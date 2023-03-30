@@ -54,6 +54,7 @@ APIs:
 import time
 
 import Adafruit_BBIO.PWM as PWM
+import threading
 
 # ------------------------------------------------------------------------
 # Global variables
@@ -64,15 +65,25 @@ import Adafruit_BBIO.PWM as PWM
 # Main Tasks
 # ------------------------------------------------------------------------
 
-class Buzzer():
+class Buzzer(threading.Thread):
     pin       = None
     debug     = None
+    on        = None
+    frequency = None
+    duration  = None
     
-    def __init__(self, pin):
-        self.pin = pin
-        self.debug = False
+    def __init__(self, pin, frequency = 60):
+        self.pin       = pin
+        self.debug     = False
+        self.on        = False
+        self.frequency = frequency
+        
+        threading.Thread.__init__(self)
  
-        # NOTE:  No other setup required
+        self._setup()
+        
+    def _setup(self):
+        PWM.start(self.pin, 0, self.frequency)
  
     # End def
     
@@ -101,9 +112,37 @@ class Buzzer():
         if self.debug:  
             print("--- %s seconds ---" % (time.time() - start_time))
 
-        
     # End def
-
+    
+    def run(self):
+        while True:
+            if self.on:
+                PWM.set_duty_cycle(self.pin, 50)
+                if self.duration is not None:
+                    time.sleep(self.duration)
+                    self.duration = None
+                    self.on = False
+            else:
+                PWM.set_duty_cycle(self.pin, 0)
+            time.sleep(0.01)
+    
+    def turn_on(self, length):
+        self.on = True
+        #PWM.set_duty_cycle(self.pin, 50)
+        
+        if length is not None:
+            self.duration = length
+            #time.sleep(length)
+            #self.turn_off()
+            
+            
+            
+    def turn_off(self):
+        self.on = False
+        #PWM.set_duty_cycle(self.pin, 0)
+    
+    def set_frequency(self, frequency):
+        self.frequency = frequency
     
     def stop(self, length=0.0):
         """ Stops the buzzer (will cause breaks between tones)
@@ -123,22 +162,20 @@ class Buzzer():
         buzzCount = int( length // period )
         buzzDur   = 0.1; 
         
-        
-        print(period)
-        
         self.play(frequency, 0)
 
         for i in range(buzzCount):
             start_time = time.time()
-            PWM.set_duty_cycle(self.pin, 50)
-            time.sleep(buzzDur)
-            PWM.set_duty_cycle(self.pin, 0)
+            #PWM.set_duty_cycle(self.pin, 50)
+            self.turn_on(buzzDur)
+            #time.sleep(buzzDur)
+            #PWM.set_duty_cycle(self.pin, 0)
             while (time.time() - start_time) < period:
                 pass
                 
             print("--- %s seconds ---" % (time.time() - start_time))
             
-        self.stop()
+        #self.stop()
         
         
     
@@ -161,12 +198,37 @@ if __name__ == '__main__':
     
     buzzer = Buzzer("P2_1")
     
+    
+    try:
+        buzzer.start()
+    
+        print("Turning on for 2 seconds")
+        buzzer.turn_on(2)
+        print("Doing stuff simulataneously too!")
+        
+        
+            
+    except KeyboardInterrupt:
+        print("Keyboard Interrupt")
+    
+    
+    main_thread = threading.currentThread()
+
+    # Wait for threads to complete
+    for t in threading.enumerate():
+        if t is not main_thread:
+            t.join()
+    print("Program End")
+    
+    
+    """
+    
     print("Play tone")
     start_time = time.time()
     
     buzzer.rhythm(440, 360, 5)
     print("--- %s seconds ---" % (time.time() - start_time))
-
+    """
     
     """
     buzzer.play(440, 1.0, False)      # Play 440Hz for 1 second

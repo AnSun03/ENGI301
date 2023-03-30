@@ -37,21 +37,32 @@ import threading
 import statistics 
 import math
 import numpy as np
+import random
 
 import buzzer as BUZZER
 import timer as TIMER
 import threaded_button as BUTTON
+import display as DISPLAY
+import tsc2007 as TSC2007
 
 class TappingTest():
     buzzer  = None
     button  = None
     timer   = None
     stop    = None
+    display = None
+    tsc2007     = None
+    sound   = None
+   
     
     def __init__(self, buzzer = "P2_1", button = "P2_2"):
-        self.buzzer = BUZZER.Buzzer(buzzer)
-        self.button = BUTTON.ThreadedButton(button)
-        self.timer  = TIMER.Timer()
+        self.buzzer  = BUZZER.Buzzer(buzzer)
+        self.button  = BUTTON.ThreadedButton(button)
+        self.timer   = TIMER.Timer()
+        self.display = DISPLAY.Display()
+        self.tsc2007 = TSC2007.TSC2007()
+        self.sound   = True
+        
         self.stop   = False
     
         self._startup()
@@ -59,10 +70,12 @@ class TappingTest():
     
     def _startup(self):
         self.button.set_on_press_callback(self.timer.record_time)
+        self.buzzer.start()
         
     # End def
     
-    def score(self, periods, times, tempo):
+    def score(self, periods, times, tempo = None):
+        
         target = 1 / tempo * 60
         delay = [(x-target)**2 for x in periods]
         error = [(x-target) for x in periods]
@@ -75,15 +88,144 @@ class TappingTest():
         
         return mean_error, rms, stdev, r
         
+    def cursor(self):
+        #x, y = self.tsc2007.wait_for_tap()[:2]
+        point =  self.tsc2007.tap_loc()
+        if point is not None:
+            x, y, z = point
+            white = (255, 255, 255)
+            for fill in range(5, 256, 50):
+                self.display.disp_circle(x, y, 15, white, (fill, fill, fill))
+                time.sleep(0.1)
+
+    
+    def disp_instructions(self, test):
+        if test is "rhythm":
+            self.display.disp_text("The Tapping Test:",line = -1)
+            self.display.disp_text("Tap to Buzzer Rhythm",line =  0)
+            self.display.disp_text("Press to Start", line =  2)
+        elif test is "reaction":
+            self.display.disp_text("The Tapping Test:",line = -1)
+            self.display.disp_text("Tap bubbles as soon as possible",line =  0)
+            self.display.disp_text("Press to Start", line =  2)
+        else:
+            raise ValueError("invalid test specified")
+    
     
     def run(self):
         """ Execute Main Program """
         
-        #Display instructions and get user input 
-        print("For the tapping test, please tap to the rhythm of the buzzer.")
-        print("Press the button once to start:")
+        b_width  = 66
+        b_height = 40
+        b1_x     = 30
+        b2_x     = 126
+        b3_x     = 223
+        b_y      = 175
         
+        self.stop = False
+        
+        while True:
+            if self.stop:
+                break
+            
+            self.display.disp_text("Welcome!", line =  -3)
+            self.display.disp_text("Choose a game to get started:", line =  0)
+        
+            self.display.disp_text("Rhythm     Reaction     Speed", line =  2)
+        
+            self.display.disp_rectangle(b1_x, b_y, b1_x+b_width, b_y+b_height, fill = (213, 187, 158))
+            self.display.disp_rectangle(b2_x, b_y, b2_x+b_width, b_y+b_height, fill = (213, 187, 158))
+            self.display.disp_rectangle(b3_x, b_y, b3_x+b_width, b_y+b_height, fill = (213, 187, 158))
+        
+            self.display.disp_sticker(290, 5, 30, 30, "power.jpg")
+            
+            while True:
+                x_tap, y_tap = self.tsc2007.wait_for_tap()[:2]
+                
+                if x_tap > 290 and y_tap < 30:
+                    self.stop = True
+                    break
+                else:
+                    if y_tap > b_y and y_tap < b_y + b_height:
+                        if  x_tap > b1_x and x_tap  < b1_x+b_width:
+                            self.rhythm_test()
+                            break
+                            
+                        if x_tap > b2_x and x_tap  < b2_x+b_width:
+                            self.reaction_test()
+                            break
+                            
+                            
+        print("Success YAY")
+                
+            
+                
+        
+        
+    # End def
+    
+    def reaction_test(self):
+        test_duration = 15.0
+        margin        = 25
+        bubble_radius = 15
+        self.display.clear()
+        
+        self.disp_instructions("reaction")
+        self.tsc2007.wait_for_tap()
+        self.display.clear()
+        
+        self.timer.start() 
+        game_start = time.time()
+        while time.time() - game_start < test_duration:
+            #random bubble location and color 
+            x = random.randint(margin, self.display.width - margin)
+            y = random.randint(margin, self.display.height - margin)
+            color = [random.randint(0, 255) for _ in range(3)]
+            
+            self.display.disp_circle(x, y, bubble_radius, fill = tuple(color))
+            while True:
+                x_tap, y_tap = self.tsc2007.wait_for_tap()[:2]
+                if  x_tap < (x + bubble_radius*2) and x_tap > (x - bubble_radius*2) \
+                and y_tap < (y + bubble_radius*2) and y_tap > (y - bubble_radius*2):
+                    if self.sound:
+                        self.buzzer.turn_on(0.05)
+                    self.timer.record_time()
+                    break
+                
+            #Make previous bubble disappear 
+            self.display.disp_circle(x, y, bubble_radius, outline = None, fill = (255, 255, 255))
+        
+        #Calculate Scores
+        time_between_taps = self.timer.get_periods()
+        mean_rxn_time = statistics.mean(time_between_taps) 
+        fastest_rxn   = min(time_between_taps)
+        slowest_rxn   = max(time_between_taps)
+        avg_varation  = statistics.stdev(time_between_taps)
+        score         = int(len(time_between_taps) + 1) # account for additonal tap
+        self.timer.reset() 
+        
+        self.display.disp_text("The game is complete!", line = -1)
+        self.display.disp_text("Your score is {} bubbles!".format(score), line = 0)
+        self.display.disp_text("Press to continue", alignment = "BC")
+        
+        self.tsc2007.wait_for_tap(function = self.display.clear)
+        
+        self.display.disp_text("Mean reaction time: {:.3f} sec".format(mean_rxn_time), line = -2)
+        self.display.disp_text("Fastest reaction time: {:.3f} sec".format(fastest_rxn), line = -1)
+        self.display.disp_text("Slowest reaction time: {:.3f} sec".format(slowest_rxn), line = 0)
+        self.display.disp_text("Varation of taps: {:.3f} sec".format(avg_varation), line = 1)
+        
+        self.display.disp_text("Press to return", alignment = "BC")
+        self.tsc2007.wait_for_tap(function = self.display.clear)
+            
+            
+    
+    def rhythm_test(self):
+        
+        self.display.clear()
+        self.disp_instructions("rhythm")
         self.button.start()
+        
         
         while True: 
             while(not self.button.is_pressed()):
@@ -112,17 +254,17 @@ class TappingTest():
             
             while(not self.button.is_pressed()):
                 pass
-        
-    # End def
 
     
     def cleanup(self):
         self.button.cleanup()
+        self.display.cleanup()
 
 if __name__ == '__main__':
     print("Program Start")
 
     # Create instantiation of the lock
+    """
     tap_test = TappingTest()
     main_thread = threading.currentThread()
     try:
@@ -136,7 +278,25 @@ if __name__ == '__main__':
     for t in threading.enumerate():
         if t is not main_thread:
             t.join()
-
+    """
+    
+    tap_test = TappingTest()
+    #tap_test.tsc2007.start()
+    
+    main_thread = threading.currentThread()
+    try:
+        # Run the lock
+         #tap_test.display.clear()
+        tap_test.run()
+            
+    except KeyboardInterrupt:
+        # Clean up hardware when exiting
+        tap_test.cleanup()
+    
+    for t in threading.enumerate():
+        if t is not main_thread:
+            t.join()
+    
     print("Program Complete")
         
         

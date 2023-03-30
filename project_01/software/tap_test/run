@@ -42,13 +42,13 @@ cd /var/lib/cloud9/ENGI301/project_01/software/tap_test
 
 
 dirs=(
-    '/var/lib/cloud9/ENGI301/python/ht16k33:'
-    '/var/lib/cloud9/ENGI301/python/servo:'
-    '/var/lib/cloud9/ENGI301/python/led:'
     '/var/lib/cloud9/ENGI301/python/potentiometer:'
     '/var/lib/cloud9/ENGI301/project_01/software/buzzer:'
     '/var/lib/cloud9/ENGI301/project_01/software/timer:'
     '/var/lib/cloud9/ENGI301/project_01/software/button:'
+    '/var/lib/cloud9/ENGI301/project_01/software/timer:'
+    '/var/lib/cloud9/ENGI301/project_01/software/display:'
+    '/var/lib/cloud9/ENGI301/project_01/software/tsc2007:'
 )
 
 

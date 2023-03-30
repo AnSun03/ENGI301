@@ -66,7 +66,7 @@ class Display():
         self.reset_pin = digitalio.DigitalInOut(RST)
         self.BAUDRATE  = baudrate
         self.spi       = board.SPI()
-        self.font      = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 24)
+        self.font      = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 18)
         
         self.disp = ili9341.ILI9341(
         self.spi,
@@ -83,7 +83,7 @@ class Display():
         else:
             self.width = self.disp.width  # we swap height/width to rotate it to landscape!
             self.height = self.disp.height
-            
+        
         self.image = Image.new("RGB", (self.width, self.height))
         self.draw  = ImageDraw.Draw(self.image)
 
@@ -119,7 +119,7 @@ class Display():
         
     """
         
-    def disp_rectangle(self, x1, y1, x2, y2, outline = 0, fill = (0, 0, 0)):
+    def disp_rectangle(self, x1, y1, x2, y2, outline = 0, fill = (255, 255, 255)):
         #image = Image.new("RGB", (self.width, self.height))
         
         #Catch out of bounds 
@@ -197,12 +197,15 @@ class Display():
         
         self.disp.image(self.image)
     
-    def disp_text(self, text = "Hello World", alignment = None, fill = (0, 0, 0), clear = False):
-
+    def disp_text(self, text = "Hello World", alignment = None, line = 0, fill = (0, 0, 0), clear = False):
+        
         (x0,y0,x1,y1) = self.font.getbbox(text)
         
         font_width  = x1-x0
         font_height = y1-y0
+        
+        
+        #font_width, font_height = self.font.getsize(text)
         if clear:
             self.clear()
         
@@ -211,7 +214,6 @@ class Display():
         if alignment is not None:
             if   alignment[0] == 't' or alignment[0] == 'T':
                 y = margin
-                print("hi")
             elif alignment[0] == 'm' or alignment[0] == 'M':
                 y = self.height // 2 - font_height // 2
             elif alignment[0] == 'b' or alignment[0] == 'B':
@@ -222,7 +224,6 @@ class Display():
             if len(alignment) > 1:
                 if   alignment[1] == 'l' or alignment[1] == 'L':
                     x = margin
-                    print("high")
                 elif alignment[1] == 'c' or alignment[1] == 'C':
                     x = self.width // 2 - font_width // 2
                 elif alignment[1] == 'r' or alignment[1] =='R':
@@ -232,10 +233,13 @@ class Display():
             else:
                 x = self.width // 2 - font_width // 2 #center as default 
         else:
+         
             y = self.height // 2 - font_height // 2
             x = self.width // 2 - font_width // 2 
-                
             
+            
+        y = y + (font_height+5)*line
+        
 
         position = (x,y)
         
@@ -250,7 +254,6 @@ class Display():
         self.disp.image(self.image)
         
         
-    
     def cleanup(self):
         self.clear()
         
@@ -267,7 +270,7 @@ if __name__ == '__main__':
     
     time.sleep(2)
     """
-
+    """
     display.disp_text(text = "Hello World", alignment = "MC")
     display.disp_text(text = "TL", alignment = "TL")
     display.disp_text(text = "TC", alignment = "TC")
@@ -281,6 +284,9 @@ if __name__ == '__main__':
     display.disp_text(text = "BR", alignment = "BR")
     
     text = "tl"
+    """
+    display.disp_text("Forget me")
+    display.disp_text("Not!", line = -1)
     #print(text[3])
     
     
