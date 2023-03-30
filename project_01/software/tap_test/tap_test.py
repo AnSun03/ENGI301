@@ -71,22 +71,26 @@ class TappingTest():
     def _startup(self):
         self.button.set_on_press_callback(self.timer.record_time)
         self.buzzer.start()
+        self.button.start()
+
         
     # End def
     
-    def score(self, periods, times, tempo = None):
+    def score(self, periods):
         
-        target = 1 / tempo * 60
-        delay = [(x-target)**2 for x in periods]
-        error = [(x-target) for x in periods]
-        count = [i for i in range(len(delay))]
+        #target = 1 / tempo * 60
+        #delay = [(x-target)**2 for x in periods]
+        #error = [(x-target) for x in periods]
+        #count = [i for i in range(len(delay))]
+        periods = [abs(x) for x in periods]
+        square_periods = [(x**2) for x in periods]
         
-        mean_error = statistics.mean(error)
-        rms   = math.sqrt(statistics.mean(delay))
+        mean_error = statistics.mean(periods)
+        rms   = math.sqrt(statistics.mean(square_periods))
         stdev = statistics.stdev(periods)
-        r     = np.corrcoef(count, delay)[0,1]
+        #r     = np.corrcoef(count, delay)[0,1]
         
-        return mean_error, rms, stdev, r
+        return mean_error, rms, stdev
         
     def cursor(self):
         #x, y = self.tsc2007.wait_for_tap()[:2]
@@ -103,7 +107,7 @@ class TappingTest():
         if test is "rhythm":
             self.display.disp_text("The Tapping Test:",line = -1)
             self.display.disp_text("Tap to Buzzer Rhythm",line =  0)
-            self.display.disp_text("Press to Start", line =  2)
+            self.display.disp_text("Press Button to Start", line =  2)
         elif test is "reaction":
             self.display.disp_text("The Tapping Test:",line = -1)
             self.display.disp_text("Tap bubbles as soon as possible",line =  0)
@@ -213,7 +217,7 @@ class TappingTest():
         self.display.disp_text("Mean reaction time: {:.3f} sec".format(mean_rxn_time), line = -2)
         self.display.disp_text("Fastest reaction time: {:.3f} sec".format(fastest_rxn), line = -1)
         self.display.disp_text("Slowest reaction time: {:.3f} sec".format(slowest_rxn), line = 0)
-        self.display.disp_text("Varation of taps: {:.3f} sec".format(avg_varation), line = 1)
+        self.display.disp_text("Variation of taps: {:.3f} sec".format(avg_varation), line = 1)
         
         self.display.disp_text("Press to return", alignment = "BC")
         self.tsc2007.wait_for_tap(function = self.display.clear)
@@ -224,7 +228,6 @@ class TappingTest():
         
         self.display.clear()
         self.disp_instructions("rhythm")
-        self.button.start()
         
         
         while True: 
@@ -232,13 +235,78 @@ class TappingTest():
                 pass
             
             #Start sequence
-            print("The test is beginning in 3...")
+            self.display.clear()
+            self.display.disp_text("The test is beginning in 3", line = -1)
             time.sleep(1)
-            print("The test is beginning in 2...")
+
+            self.display.disp_text("The test is beginning in 2")
             time.sleep(1)
-            print("The test is beginning in 1...")
+
+            self.display.disp_text("The test is beginning in 1", line = 1)
             time.sleep(1)
             
+            self.display.clear()
+            self.display.disp_text("Listen.")
+            time.sleep(0.5)
+            
+            rhythm = []
+            timing = []
+            for i in range(2):
+                group = random.randint(2,4)
+                print(group)
+                note_length = 0.1
+                pause_length = random.uniform(0.15,0.8)
+                for j in range(group):
+                    rhythm.append(note_length)
+                    rhythm.append(pause_length)
+                    timing.append(note_length + pause_length)
+                rhythm.append(0)
+                rhythm.append(1.25)
+            self.buzzer.tune(rhythm)
+            
+            self.display.clear()
+            self.display.disp_text("Recreate the rhythm.", line = -1)
+            self.timer.reset()
+            self.timer.start()
+            
+            while len(self.timer.get_times()) < len(timing):
+                pass
+            
+            button_press_periods = self.timer.get_periods()
+            print(len(timing))
+            print(len(button_press_periods))
+            delay = []
+            for i in range(len(button_press_periods)):
+                delay.append(button_press_periods[i] - timing[i])
+                
+            #Calculate scores 
+            mean, rms, variation = self.score(delay)
+            score = int(100 - (mean - 0.05)*(100/(0.8-0)))
+            if score < 0:
+                score = 0            
+            
+            self.display.clear()
+            self.display.disp_text("Great Job!", line = -1)
+            self.display.disp_text("You scored a {}/100.".format(score))
+            self.display.disp_text("Press to continue", alignment = "BC")
+        
+            self.tsc2007.wait_for_tap(function = self.display.clear)
+        
+            self.display.disp_text("Mean discrepancy: {:.3f} sec".format(mean), line = -1)
+            self.display.disp_text("Root mean square error: {:.3f} sec".format(rms), line = 0)
+            self.display.disp_text("Variation of discrepancy: {:.3f} sec".format(variation), line = 1)
+
+    
+            self.display.disp_text("Press to Return", alignment = "BC")
+            
+            self.tsc2007.wait_for_tap(function = self.display.clear)
+
+            break        
+            
+            
+            
+            
+            """
             tempo = 60
             length = 10
             self.buzzer.rhythm(tempo = tempo, length = length)
@@ -254,11 +322,13 @@ class TappingTest():
             
             while(not self.button.is_pressed()):
                 pass
-
+            """
     
     def cleanup(self):
         self.button.cleanup()
         self.display.cleanup()
+        self.tsc2007.cleanup()
+        self.buzzer.cleanup()
 
 if __name__ == '__main__':
     print("Program Start")

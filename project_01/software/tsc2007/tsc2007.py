@@ -55,6 +55,7 @@ class TSC2007(threading.Thread):
     old_point   = None
     disp_width  = None
     disp_height = None
+    stop        = None
     
     def __init__(self, bus = 1, address = 0x48, irq_dio = None, disp_width = 320, disp_height = 240):
         self.bus         = bus
@@ -64,6 +65,7 @@ class TSC2007(threading.Thread):
         self.disp_height = disp_height
         self.command     = "/usr/sbin/i2cset -y {0} {1}".format(bus, address)
         self.i2c         = board.I2C()
+        self.stop        = False
 
         threading.Thread.__init__(self)
     
@@ -74,7 +76,7 @@ class TSC2007(threading.Thread):
         
         
     def run(self):
-        while True:
+        while not self.stop:
             if self.tsc.touched:
                 self.point = self.tsc.touch
             
@@ -122,6 +124,9 @@ class TSC2007(threading.Thread):
                 
         x, y, z = self.tap_loc() 
         return x, y, z, tap_dur, function_return_value
+        
+    def cleanup(self):
+        self.stop = True
         
         
 if __name__ == '__main__':

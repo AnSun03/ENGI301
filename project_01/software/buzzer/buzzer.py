@@ -71,13 +71,14 @@ class Buzzer(threading.Thread):
     on        = None
     frequency = None
     duration  = None
+    stop      = None
     
     def __init__(self, pin, frequency = 60):
         self.pin       = pin
         self.debug     = False
         self.on        = False
         self.frequency = frequency
-        
+        self.stop      = False
         threading.Thread.__init__(self)
  
         self._setup()
@@ -115,7 +116,7 @@ class Buzzer(threading.Thread):
     # End def
     
     def run(self):
-        while True:
+        while not self.stop:
             if self.on:
                 PWM.set_duty_cycle(self.pin, 50)
                 if self.duration is not None:
@@ -158,9 +159,11 @@ class Buzzer(threading.Thread):
         
     # End def
     def rhythm(self, frequency = 50, tempo = 60, length = 1.0):
+        
         period    = 1 / (tempo/60) 
         buzzCount = int( length // period )
         buzzDur   = 0.1; 
+        
         
         self.play(frequency, 0)
 
@@ -176,6 +179,19 @@ class Buzzer(threading.Thread):
             print("--- %s seconds ---" % (time.time() - start_time))
             
         #self.stop()
+    
+    def tune(self, rhythm, frequency = 50, length = 1.0):
+        """  Plays a series of buzzes based on rhythm  """
+
+        for i in range(0, len(rhythm)-1, 2):
+            start_time = time.time()
+            if rhythm[i] > 0:
+                self.turn_on(rhythm[i])
+            
+            while (time.time() - start_time) < rhythm[i+1] + rhythm[i]: #add times because threadednesses
+                pass
+                
+            print("--- %s seconds ---" % (time.time() - start_time))
         
         
     
@@ -185,6 +201,7 @@ class Buzzer(threading.Thread):
         """
         self.stop()
         PWM.cleanup()
+        self.stop = True
     # End def
     
 # End class
@@ -201,10 +218,22 @@ if __name__ == '__main__':
     
     try:
         buzzer.start()
-    
-        print("Turning on for 2 seconds")
-        buzzer.turn_on(2)
-        print("Doing stuff simulataneously too!")
+        
+        rhythm = []
+        import random
+        for i in range(3):
+            group = random.randint(1,4)
+            print(group)
+            note_length = 0.1
+            pause_length = random.uniform(0.25,1.5)
+            for j in range(group):
+                rhythm.append(note_length)
+                rhythm.append(pause_length)
+            rhythm.append(0)
+            rhythm.append(1)
+        print(rhythm)
+            
+        buzzer.tune(rhythm)
         
         
             

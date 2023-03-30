@@ -332,7 +332,7 @@ if __name__ == '__main__':
     
     try:
         for i in range(music.get_song_list_len()):
-            print("Play Song {0}".format(i))
+            print("Play Song {}".format(i))
             music.play_song_from_list(i, zero_index=True)
     except KeyBoardException:
         pass
