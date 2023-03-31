@@ -108,7 +108,7 @@ class Buzzer(threading.Thread):
         time.sleep(length)
         
         if (stop):
-            self.stop()
+            self.stop_buzzer()
          
         if self.debug:  
             print("--- %s seconds ---" % (time.time() - start_time))
@@ -126,6 +126,7 @@ class Buzzer(threading.Thread):
             else:
                 PWM.set_duty_cycle(self.pin, 0)
             time.sleep(0.01)
+        print("Buzzer stopped running")
     
     def turn_on(self, length):
         self.on = True
@@ -145,7 +146,7 @@ class Buzzer(threading.Thread):
     def set_frequency(self, frequency):
         self.frequency = frequency
     
-    def stop(self, length=0.0):
+    def stop_buzzer(self, length=0.0):
         """ Stops the buzzer (will cause breaks between tones)
             length    - Time in seconds (default 0.0 seconds)
         """
@@ -199,9 +200,11 @@ class Buzzer(threading.Thread):
         """Stops the buzzer and cleans up the PWM.
              *** This function must be called during hardware cleanup ***
         """
-        self.stop()
+        self.stop_buzzer()
         PWM.cleanup()
         self.stop = True
+        
+     
     # End def
     
 # End class

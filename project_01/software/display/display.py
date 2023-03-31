@@ -141,7 +141,16 @@ class Display():
         
         #x and y are for upper left coordinates of the circle
         
-    
+    def disp_line(self, x1, y1, x2, y2, fill = 0, width = 2):
+        #Catch out of bounds 
+        if any(x > self.width or x < 0 for x in [x1, x2]) or any(y > self.height or y < 0 for y in [y1, y2]):
+            raise ValueError("the coordinates are out of bounds")
+            
+        
+        self.overlay()
+        self.draw.line((x1, y1, x2, y2), fill=fill, width = width )
+        self.disp.image(self.image)
+        
     def disp_background(self, image_name = "blinka.jpg"):
             
         #image = Image.new("RGB", (self.width, self.height))
@@ -256,6 +265,7 @@ class Display():
         
     def cleanup(self):
         self.clear()
+        self.disp_rectangle(0, 0, self.width, self.height, fill = (0, 0, 0))
         
 
 if __name__ == '__main__':
@@ -285,8 +295,7 @@ if __name__ == '__main__':
     
     text = "tl"
     """
-    display.disp_text("Forget me")
-    display.disp_text("Not!", line = -1)
+    display.disp_line(320/2, 240/2, 320, 240)
     #print(text[3])
     
     

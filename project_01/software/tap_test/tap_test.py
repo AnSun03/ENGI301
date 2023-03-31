@@ -158,26 +158,158 @@ class TappingTest():
                         if x_tap > b2_x and x_tap  < b2_x+b_width:
                             self.reaction_test()
                             break
-                            
-                            
-        print("Success YAY")
+                        
+                        if x_tap > b3_x and x_tap  < b3_x+b_width:
+                            self.speed_test()
+                            break
+
+            #self.display.disp_rectangle(0, 0, self.display.width, self.display.height, fill = (0, 0, 0))
                 
+        # End def
+    def speed_test(self):
+        """ Starts the speed test sequence """
+        bubble_radius = 15
+        
+        self.display.clear()
+        self.display.disp_text("Pop all bubbles in sequence fast!", line = -1)
+        self.display.disp_text("Start with the blue bubble", line = 0)
+        self.display.disp_text("End with the red bubble", line = 1)
+        self.display.disp_text("Time starts with first tap", line = 2)
+        self.display.disp_text("Tap to continue", alignment = "BC")
+        
+        time.sleep(1)
+        self.tsc2007.wait_for_tap(function = self.display.clear)
+        
+        #Horizontally traveling bubbles
+        bubbles = int( (self.display.width / (bubble_radius*3))) #space the bubbles 
+
+        x = []
+        y = []
+        for bubble in range(bubbles):
+            if bubble is 0: #first bubble
+                color = (0, 0, 255) #blue
+            elif bubble is (bubbles-1): #last bubble
+                color = (255, 0, 0) #red
+            else:  
+                color = (255, 0, 255) #purple
             
+            x.append(bubble_radius + (bubble_radius*3)*bubble) #bubble_radius amount of gap 
+            y.append(random.randint(0, 240))
+            
+            self.display.disp_circle(x[bubble], y[bubble], bubble_radius, outline = None, fill = color)
+            if bubble > 0:
+                self.display.disp_line(x[bubble],y[bubble],x[bubble-1],y[bubble-1])
+        
+        tap = 0
+        self.timer.reset()
+       
+        while tap < bubbles:
+            x_tap, y_tap = self.tsc2007.wait_for_tap()[:2]
+            
+            if  x_tap < (x[tap] + bubble_radius*2) and x_tap > (x[tap] - bubble_radius*2) \
+            and y_tap < (y[tap] + bubble_radius*2) and y_tap > (y[tap] - bubble_radius*2):
+                if tap < 1:
+                    self.timer.start()
+                else:
+                    self.timer.record_time()
+                self.timer.record_time()
+                self.display.disp_rectangle(0, 0, x[tap]+bubble_radius*2-2, self.display.height, outline = None, fill = (255, 255, 255))
+                #self.display.disp_circle(x[tap], y[tap], bubble_radius, outline = None, fill = (255, 255, 255))
+                #if tap > 0:
+                    #self.display.disp_line(x[tap],y[tap],x[tap-1],y[tap-1], fill = (255, 255, 255))
+
+                tap = tap + 1
                 
         
+        #Get times
+        times = self.timer.get_times()
+        periods = self.timer.get_periods()
         
-    # End def
-    
+        #Calculate Scores
+        time_elapsed = []
+        time_elapsed.append(times[-1] - times[0])
+        
+        self.display.clear()
+        self.display.disp_text("First Round Complete!", line = -1)
+        self.display.disp_text("Your time is {:.3f} seconds!".format(time_elapsed[0]), line = 0)
+        self.display.disp_text("Speed: {:.3f} bubbles/sec!".format(bubbles/time_elapsed[0]), line = 1)
+        
+        self.tsc2007.wait_for_tap(function = self.display.clear)
+        self.display.disp_text("Second Round!", line = -1)
+        self.display.disp_text("Tap to Proceed", alignment = "BC")
+        
+        self.tsc2007.wait_for_tap(function = self.display.clear)
+        
+        
+        #Vertical test
+        bubbles = int( (self.display.height / (bubble_radius*3))) #space the bubbles 
+
+        x = []
+        y = []
+        for bubble in range(bubbles):
+            if bubble is 0: #first bubble
+                color = (0, 0, 255) #blue
+            elif bubble is (bubbles-1): #last bubble
+                color = (255, 0, 0) #red
+            else:  
+                color = (255, 0, 255) #purple
+            
+            y.append(bubble_radius + (bubble_radius*3)*bubble) #bubble_radius amount of gap 
+            x.append(random.randint(0, 320))
+            
+            self.display.disp_circle(x[bubble], y[bubble], bubble_radius, outline = None, fill = color)
+            if bubble > 0:
+                self.display.disp_line(x[bubble],y[bubble],x[bubble-1],y[bubble-1])
+        
+        tap = 0
+        self.timer.reset()
+        while tap < bubbles:
+            x_tap, y_tap = self.tsc2007.wait_for_tap()[:2]
+            
+            if  x_tap < (x[tap] + bubble_radius*2) and x_tap > (x[tap] - bubble_radius*2) \
+            and y_tap < (y[tap] + bubble_radius*2) and y_tap > (y[tap] - bubble_radius*2):
+                if tap < 1:
+                    self.timer.start()
+                else:
+                    self.timer.record_time()
+                self.display.disp_rectangle(0, 0, self.display.width, y[tap]+bubble_radius*2-2, outline = None, fill = (255, 255, 255))
+
+                #self.display.disp_circle(x[tap], y[tap], bubble_radius, outline = None, fill = (255, 255, 255))
+                #if tap > 0:
+                    #self.display.disp_line(x[tap],y[tap],x[tap-1],y[tap-1], fill = (255, 255, 255))
+
+                tap = tap + 1
+                
+        
+        #Get times
+        times = self.timer.get_times()
+        periods = self.timer.get_periods()
+        
+        time_elapsed.append(times[-1] - times[0])
+        self.display.clear()
+        self.display.disp_text("First Round Complete!", line = -1)
+        self.display.disp_text("Your time is {:.3f} seconds!".format(time_elapsed[1]), line = 0)
+        self.display.disp_text("Speed: {:.3f} bubbles/sec!".format(bubbles/time_elapsed[1]), line = 1)
+        self.display.disp_text("Tap to Continue", alignment = "BC")
+        
+        self.tsc2007.wait_for_tap(function = self.display.clear)
+
+        
+        
     def reaction_test(self):
+        """ Starts the reaction test sequence """
         test_duration = 15.0
         margin        = 25
         bubble_radius = 15
+        
         self.display.clear()
         
+        #Before game starts
         self.disp_instructions("reaction")
         self.tsc2007.wait_for_tap()
         self.display.clear()
         
+        #Start the game
         self.timer.start() 
         game_start = time.time()
         while time.time() - game_start < test_duration:
@@ -185,12 +317,14 @@ class TappingTest():
             x = random.randint(margin, self.display.width - margin)
             y = random.randint(margin, self.display.height - margin)
             color = [random.randint(0, 255) for _ in range(3)]
-            
+
             self.display.disp_circle(x, y, bubble_radius, fill = tuple(color))
             while True:
                 x_tap, y_tap = self.tsc2007.wait_for_tap()[:2]
+                #Check if bubble is tapped 
                 if  x_tap < (x + bubble_radius*2) and x_tap > (x - bubble_radius*2) \
                 and y_tap < (y + bubble_radius*2) and y_tap > (y - bubble_radius*2):
+                    
                     if self.sound:
                         self.buzzer.turn_on(0.05)
                     self.timer.record_time()
@@ -208,6 +342,7 @@ class TappingTest():
         score         = int(len(time_between_taps) + 1) # account for additonal tap
         self.timer.reset() 
         
+        #Show scores and ending sequence
         self.display.disp_text("The game is complete!", line = -1)
         self.display.disp_text("Your score is {} bubbles!".format(score), line = 0)
         self.display.disp_text("Press to continue", alignment = "BC")
@@ -228,101 +363,100 @@ class TappingTest():
         
         self.display.clear()
         self.disp_instructions("rhythm")
-        
-        
-        while True: 
-            while(not self.button.is_pressed()):
-                pass
-            
-            #Start sequence
-            self.display.clear()
-            self.display.disp_text("The test is beginning in 3", line = -1)
-            time.sleep(1)
-
-            self.display.disp_text("The test is beginning in 2")
-            time.sleep(1)
-
-            self.display.disp_text("The test is beginning in 1", line = 1)
-            time.sleep(1)
-            
-            self.display.clear()
-            self.display.disp_text("Listen.")
-            time.sleep(0.5)
-            
-            rhythm = []
-            timing = []
-            for i in range(2):
-                group = random.randint(2,4)
-                print(group)
-                note_length = 0.1
-                pause_length = random.uniform(0.15,0.8)
-                for j in range(group):
-                    rhythm.append(note_length)
-                    rhythm.append(pause_length)
-                    timing.append(note_length + pause_length)
-                rhythm.append(0)
-                rhythm.append(1.25)
-            self.buzzer.tune(rhythm)
-            
-            self.display.clear()
-            self.display.disp_text("Recreate the rhythm.", line = -1)
-            self.timer.reset()
-            self.timer.start()
-            
-            while len(self.timer.get_times()) < len(timing):
-                pass
-            
-            button_press_periods = self.timer.get_periods()
-            print(len(timing))
-            print(len(button_press_periods))
-            delay = []
-            for i in range(len(button_press_periods)):
-                delay.append(button_press_periods[i] - timing[i])
-                
-            #Calculate scores 
-            mean, rms, variation = self.score(delay)
-            score = int(100 - (mean - 0.05)*(100/(0.8-0)))
-            if score < 0:
-                score = 0            
-            
-            self.display.clear()
-            self.display.disp_text("Great Job!", line = -1)
-            self.display.disp_text("You scored a {}/100.".format(score))
-            self.display.disp_text("Press to continue", alignment = "BC")
-        
-            self.tsc2007.wait_for_tap(function = self.display.clear)
-        
-            self.display.disp_text("Mean discrepancy: {:.3f} sec".format(mean), line = -1)
-            self.display.disp_text("Root mean square error: {:.3f} sec".format(rms), line = 0)
-            self.display.disp_text("Variation of discrepancy: {:.3f} sec".format(variation), line = 1)
-
     
-            self.display.disp_text("Press to Return", alignment = "BC")
-            
-            self.tsc2007.wait_for_tap(function = self.display.clear)
+        while(not self.button.is_pressed()):
+            pass
+        
+        #Start sequence
+        self.display.clear()
+        self.display.disp_text("The test is beginning in 3", line = -1)
+        time.sleep(1)
 
-            break        
+        self.display.disp_text("The test is beginning in 2")
+        time.sleep(1)
+
+        self.display.disp_text("The test is beginning in 1", line = 1)
+        time.sleep(1)
+        
+        self.display.clear()
+        self.display.disp_text("Listen.")
+        time.sleep(0.5)
+        
+        rhythm = []
+        timing = []
+        
+        #Generate a randomized rhythm
+        for group in range(2):
+            group_length = random.randint(2,4) 
+            note_length = 0.1
+            pause_length = random.uniform(0.15,0.8)
+            for note in range(group_length):
+                rhythm.append(note_length)
+                rhythm.append(pause_length)
+                timing.append(note_length + pause_length)
+            rhythm.append(0)
+            rhythm.append(1.25)
+            
+        #Play rhythm and get user input 
+        self.buzzer.tune(rhythm)
+        self.display.clear()
+        self.display.disp_text("Recreate the rhythm.", line = -1)
+        self.timer.reset()
+        self.timer.start()
+        
+        #Stop when user taps once for every note 
+        while len(self.timer.get_times()) < len(timing):
+            pass
+        
+        #Get statistics 
+        button_press_periods = self.timer.get_periods()
+        delay = []
+        for i in range(len(button_press_periods)):
+            delay.append(button_press_periods[i] - timing[i])
+            
+        #Calculate scores 
+        mean, rms, variation = self.score(delay)
+        score = int(100 - (mean - 0.05)*(100/(0.8-0)))
+        if score < 0:
+            score = 0            
+        
+        # Display scores and statistics 
+        self.display.clear()
+        self.display.disp_text("Great Job!", line = -1)
+        self.display.disp_text("You scored a {}/100.".format(score))
+        self.display.disp_text("Press to continue", alignment = "BC")
+    
+        self.tsc2007.wait_for_tap(function = self.display.clear)
+    
+        self.display.disp_text("Mean discrepancy: {:.3f} sec".format(mean), line = -1)
+        self.display.disp_text("Root mean square error: {:.3f} sec".format(rms), line = 0)
+        self.display.disp_text("Variation of discrepancy: {:.3f} sec".format(variation), line = 1)
+
+
+        self.display.disp_text("Press to Return", alignment = "BC")
+        
+        self.tsc2007.wait_for_tap(function = self.display.clear)
+            
+    # End def
             
             
-            
-            
-            """
-            tempo = 60
-            length = 10
-            self.buzzer.rhythm(tempo = tempo, length = length)
-            
-            periods = self.timer.get_periods()
-            times   = self.timer.get_times()
-            
-            print("Test Complete, here is your score (root mean square error, standard deviation, r coefficient)")
-            print(self.score(periods,times,tempo))
-            
-            time.sleep(2)
-            print("Press button again to restart test")
-            
-            while(not self.button.is_pressed()):
-                pass
-            """
+        """
+        tempo = 60
+        length = 10
+        self.buzzer.rhythm(tempo = tempo, length = length)
+        
+        periods = self.timer.get_periods()
+        times   = self.timer.get_times()
+        
+        print("Test Complete, here is your score (root mean square error, standard deviation, r coefficient)")
+        print(self.score(periods,times,tempo))
+        
+        time.sleep(2)
+        print("Press button again to restart test")
+        
+        while(not self.button.is_pressed()):
+            pass
+        """
     
     def cleanup(self):
         self.button.cleanup()
@@ -358,6 +492,7 @@ if __name__ == '__main__':
         # Run the lock
          #tap_test.display.clear()
         tap_test.run()
+        raise KeyboardInterrupt
             
     except KeyboardInterrupt:
         # Clean up hardware when exiting

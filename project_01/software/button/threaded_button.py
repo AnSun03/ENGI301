@@ -254,8 +254,7 @@ class ThreadedButton(threading.Thread):
         
         self.stop_button = True
         
-        #while (self.stop_button):
-            #time.sleep(self.sleep_time)
+        
     
     # End def
     
