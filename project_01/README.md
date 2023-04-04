@@ -5,7 +5,7 @@ For hardware build instructions, go to https://www.hackster.io/asun/tap-test-tt-
 ### Cloning the Respository
 Create a new directory for the program. To clone the repository: 
 ```
-git clone https://github.com/AnSun03/ENGI301/tree/main/project_01/software
+git clone https://github.com/AnSun03/ENGI301
 git pull
 ```
 ### Installation
@@ -27,4 +27,32 @@ sudo apt-get install fonts-dejavu
 sudo apt-get install python3-pil
 pip3 install adafruit-circuitpython-tsc2007
 ```
+### Automatic Boot
+Setup for the program to run upon the PocketBeagle booting. In the command line: 
+'''
+sudo crontab -e
+@reboot sleep 30 && bash /var/lib/cloud9/ENGI301/project_01/software/tap_test > /var/lib/cloud9/logs/chronlog 2>&1
+'''
+
+## Directories 
+### tap_test - main program directory
+configure_pins.sh - modify if pin connections are different 
+
+run - check that filepaths are correct
+
+tap_test.py - main program file 
+
+### button - threaded button driver
+Check that the default pin matches the hardware wiring or manually set the pin otherwise. Ensure that the button driver is set to the right configuration (active-low by default).
+
+### buzzer - threaded buzzer driver
+Ensure correct pin connections. 
+
+### display - SPI display driver
+Ensure correct pin connections. 
+
+### timer - helper class for recording user inputs
+
+### tsc2007 - touch screen controller driver
+Ensure correct pin connections. Check that the size of the display matches the default (320 x 240). 
 
