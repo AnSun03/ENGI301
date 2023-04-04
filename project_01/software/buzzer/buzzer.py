@@ -4,6 +4,10 @@
 Buzzer
 --------------------------------------------------------------------------
 License:   
+Copyright 2023 - Andrew Sun
+
+Based on library from 
+
 Copyright 2021-2023 Erik Welsh
 
 Based on library from
@@ -73,7 +77,7 @@ class Buzzer(threading.Thread):
     duration  = None
     stop      = None
     
-    def __init__(self, pin, frequency = 60):
+    def __init__(self, pin, frequency = 750):
         self.pin       = pin
         self.debug     = False
         self.on        = False
@@ -100,10 +104,8 @@ class Buzzer(threading.Thread):
             start_time = time.time()
         
         if frequency is not None:
-            # !!! FIX !!! 
             PWM.start(self.pin, 50, frequency)
-            # !!! FIX !!! 
-        
+
         
         time.sleep(length)
         
@@ -126,23 +128,19 @@ class Buzzer(threading.Thread):
             else:
                 PWM.set_duty_cycle(self.pin, 0)
             time.sleep(0.01)
-        print("Buzzer stopped running")
-    
+
     def turn_on(self, length):
         self.on = True
-        #PWM.set_duty_cycle(self.pin, 50)
-        
+
         if length is not None:
             self.duration = length
-            #time.sleep(length)
-            #self.turn_off()
+           
             
             
             
     def turn_off(self):
         self.on = False
-        #PWM.set_duty_cycle(self.pin, 0)
-    
+
     def set_frequency(self, frequency):
         self.frequency = frequency
     
@@ -150,12 +148,7 @@ class Buzzer(threading.Thread):
         """ Stops the buzzer (will cause breaks between tones)
             length    - Time in seconds (default 0.0 seconds)
         """
-        # !!! FIX !!! 
         PWM.stop(self.pin)
-        
-        #print("Stopping the buzzer")
-        # !!! FIX !!! 
-
         time.sleep(length)
         
     # End def
@@ -170,17 +163,14 @@ class Buzzer(threading.Thread):
 
         for i in range(buzzCount):
             start_time = time.time()
-            #PWM.set_duty_cycle(self.pin, 50)
             self.turn_on(buzzDur)
-            #time.sleep(buzzDur)
-            #PWM.set_duty_cycle(self.pin, 0)
+          
             while (time.time() - start_time) < period:
                 pass
                 
             print("--- %s seconds ---" % (time.time() - start_time))
             
-        #self.stop()
-    
+
     def tune(self, rhythm, frequency = 50, length = 1.0):
         """  Plays a series of buzzes based on rhythm  """
 
@@ -252,22 +242,6 @@ if __name__ == '__main__':
             t.join()
     print("Program End")
     
-    
-    """
-    
-    print("Play tone")
-    start_time = time.time()
-    
-    buzzer.rhythm(440, 360, 5)
-    print("--- %s seconds ---" % (time.time() - start_time))
-    """
-    
-    """
-    buzzer.play(440, 1.0, False)      # Play 440Hz for 1 second
-    time.sleep(1.0)
-    buzzer.play(880, 1.0, True)       # Play 880Hz for 1 second
-    time.sleep(1.0)   
-    """
     buzzer.cleanup()
     
     print("Test Complete")

@@ -31,13 +31,47 @@ OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 --------------------------------------------------------------------------
 
+Tapping Test
+
+    This initiates the administration of tapping tests
+    
+Software API
+    TappingTest(buzzer, button, display, tsc2007, sound)
+        -buzzer:  tuple in the format (PWM pin (e.g., "P2_1"), sound frequency (Hz))
+        -button:  tuple in the format (GPIO pin, sleep_time, active_high (bool))
+        -display: tuple in the format (CS pin (e.g., board.P1_6), DC pin, RST pin, backlight pin, baudrate)
+        -tsc2007: tuple in the foramt (I2C bus #, address, irq_dio, display_width, display_height, pressure_threshold)
+        -sound:   bool for whether the buzzer plays when a bubble is tapped
+        
+    run()
+        -starts the program
+    cleanup()
+        -cleans up all the hardware components
+    
+    *Following functions should not be called by the user
+    score(periods)
+        -calcualates mean, root mean squared, and standard deviation from "periods" (tap interval data)
+    
+    disp_instructions(test)
+        -displays instructions for the specified test (rhythm or reaction tests)
+    
+    Tests:
+    rhythm_test()
+        -tests for rhythm and motor control
+    reaction_test()    
+        -tests for reaction speed and motor control
+    speed_test()
+        -tests for motor control
+    
 """
+
 import time
 import threading
 import statistics 
 import math
 import numpy as np
 import random
+import board
 
 import buzzer as BUZZER
 import timer as TIMER
@@ -51,17 +85,18 @@ class TappingTest():
     timer   = None
     stop    = None
     display = None
-    tsc2007     = None
+    tsc2007 = None
     sound   = None
    
     
-    def __init__(self, buzzer = "P2_1", button = "P2_2"):
-        self.buzzer  = BUZZER.Buzzer(buzzer)
-        self.button  = BUTTON.ThreadedButton(button)
+    def __init__(self, buzzer = ("P2_1", 750), button = ("P2_2", 0.1, True), display = (board.P1_6, board.P1_4, board.P1_2, "P1_20", 24000000),
+                 tsc2007 = (1, 0x48, None, 320, 240, 80), sound = True):
+        self.buzzer  = BUZZER.Buzzer(*buzzer)
+        self.button  = BUTTON.ThreadedButton(*button)
         self.timer   = TIMER.Timer()
-        self.display = DISPLAY.Display()
-        self.tsc2007 = TSC2007.TSC2007()
-        self.sound   = True
+        self.display = DISPLAY.Display(*display)
+        self.tsc2007 = TSC2007.TSC2007(*tsc2007)
+        self.sound   = sound
         
         self.stop   = False
     
@@ -91,17 +126,6 @@ class TappingTest():
         #r     = np.corrcoef(count, delay)[0,1]
         
         return mean_error, rms, stdev
-        
-    def cursor(self):
-        #x, y = self.tsc2007.wait_for_tap()[:2]
-        point =  self.tsc2007.tap_loc()
-        if point is not None:
-            x, y, z = point
-            white = (255, 255, 255)
-            for fill in range(5, 256, 50):
-                self.display.disp_circle(x, y, 15, white, (fill, fill, fill))
-                time.sleep(0.1)
-
     
     def disp_instructions(self, test):
         if test is "rhythm":
@@ -119,57 +143,60 @@ class TappingTest():
     def run(self):
         """ Execute Main Program """
         
+        #Locations of buttons
         b_width  = 66
         b_height = 40
         b1_x     = 30
         b2_x     = 126
         b3_x     = 223
-        b_y      = 175
+        b_y      = 180
+        button_color = (255, 255, 0)
         
-        self.stop = False
+        self.stop = False #controls whether entire program ends
         
         while True:
             if self.stop:
                 break
             
+            #Display instructions
             self.display.disp_text("Welcome!", line =  -3)
             self.display.disp_text("Choose a game to get started:", line =  0)
-        
+            
+            #Show buttons
             self.display.disp_text("Rhythm     Reaction     Speed", line =  2)
-        
-            self.display.disp_rectangle(b1_x, b_y, b1_x+b_width, b_y+b_height, fill = (213, 187, 158))
-            self.display.disp_rectangle(b2_x, b_y, b2_x+b_width, b_y+b_height, fill = (213, 187, 158))
-            self.display.disp_rectangle(b3_x, b_y, b3_x+b_width, b_y+b_height, fill = (213, 187, 158))
-        
-            self.display.disp_sticker(290, 5, 30, 30, "power.jpg")
+            self.display.disp_rectangle(b1_x, b_y, b1_x+b_width, b_y+b_height, fill = button_color)
+            self.display.disp_rectangle(b2_x, b_y, b2_x+b_width, b_y+b_height, fill = button_color)
+            self.display.disp_rectangle(b3_x, b_y, b3_x+b_width, b_y+b_height, fill = button_color)
+            
+            self.display.disp_sticker(290, 5, 30, 30, "power.jpg") #Power button in the corner
             
             while True:
                 x_tap, y_tap = self.tsc2007.wait_for_tap()[:2]
                 
-                if x_tap > 290 and y_tap < 30:
+                if x_tap > 290 and y_tap < 30: #power button pressed
                     self.stop = True
                     break
                 else:
                     if y_tap > b_y and y_tap < b_y + b_height:
-                        if  x_tap > b1_x and x_tap  < b1_x+b_width:
+                        if  x_tap > b1_x and x_tap  < b1_x+b_width: #left button
                             self.rhythm_test()
                             break
                             
-                        if x_tap > b2_x and x_tap  < b2_x+b_width:
+                        if x_tap > b2_x and x_tap  < b2_x+b_width: #center button
                             self.reaction_test()
                             break
                         
-                        if x_tap > b3_x and x_tap  < b3_x+b_width:
+                        if x_tap > b3_x and x_tap  < b3_x+b_width: #right button
                             self.speed_test()
                             break
 
-            #self.display.disp_rectangle(0, 0, self.display.width, self.display.height, fill = (0, 0, 0))
-                
         # End def
     def speed_test(self):
         """ Starts the speed test sequence """
+        
         bubble_radius = 15
         
+        #Give instructions
         self.display.clear()
         self.display.disp_text("Pop all bubbles in sequence fast!", line = -1)
         self.display.disp_text("Start with the blue bubble", line = 0)
@@ -203,21 +230,19 @@ class TappingTest():
         tap = 0
         self.timer.reset()
        
+       #Ensure user taps all bubbles sequentially 
         while tap < bubbles:
             x_tap, y_tap = self.tsc2007.wait_for_tap()[:2]
-            
             if  x_tap < (x[tap] + bubble_radius*2) and x_tap > (x[tap] - bubble_radius*2) \
             and y_tap < (y[tap] + bubble_radius*2) and y_tap > (y[tap] - bubble_radius*2):
                 if tap < 1:
-                    self.timer.start()
+                    self.timer.start() #Start timer when first bubble popped
                 else:
                     self.timer.record_time()
                 self.timer.record_time()
+                
+                #Cover up tapped bubbles 
                 self.display.disp_rectangle(0, 0, x[tap]+bubble_radius*2-2, self.display.height, outline = None, fill = (255, 255, 255))
-                #self.display.disp_circle(x[tap], y[tap], bubble_radius, outline = None, fill = (255, 255, 255))
-                #if tap > 0:
-                    #self.display.disp_line(x[tap],y[tap],x[tap-1],y[tap-1], fill = (255, 255, 255))
-
                 tap = tap + 1
                 
         
@@ -229,10 +254,12 @@ class TappingTest():
         time_elapsed = []
         time_elapsed.append(times[-1] - times[0])
         
+        #Ending sequence
         self.display.clear()
         self.display.disp_text("First Round Complete!", line = -1)
         self.display.disp_text("Your time is {:.3f} seconds!".format(time_elapsed[0]), line = 0)
         self.display.disp_text("Speed: {:.3f} bubbles/sec!".format(bubbles/time_elapsed[0]), line = 1)
+        self.display.disp_text("Tap to Continue", alignment = "BC")
         
         self.tsc2007.wait_for_tap(function = self.display.clear)
         self.display.disp_text("Second Round!", line = -1)
@@ -274,10 +301,6 @@ class TappingTest():
                     self.timer.record_time()
                 self.display.disp_rectangle(0, 0, self.display.width, y[tap]+bubble_radius*2-2, outline = None, fill = (255, 255, 255))
 
-                #self.display.disp_circle(x[tap], y[tap], bubble_radius, outline = None, fill = (255, 255, 255))
-                #if tap > 0:
-                    #self.display.disp_line(x[tap],y[tap],x[tap-1],y[tap-1], fill = (255, 255, 255))
-
                 tap = tap + 1
                 
         
@@ -285,9 +308,10 @@ class TappingTest():
         times = self.timer.get_times()
         periods = self.timer.get_periods()
         
+        #Ending sequence
         time_elapsed.append(times[-1] - times[0])
         self.display.clear()
-        self.display.disp_text("First Round Complete!", line = -1)
+        self.display.disp_text("Second Round Complete!", line = -1)
         self.display.disp_text("Your time is {:.3f} seconds!".format(time_elapsed[1]), line = 0)
         self.display.disp_text("Speed: {:.3f} bubbles/sec!".format(bubbles/time_elapsed[1]), line = 1)
         self.display.disp_text("Tap to Continue", alignment = "BC")
@@ -297,7 +321,7 @@ class TappingTest():
         
         
     def reaction_test(self):
-        """ Starts the reaction test sequence """
+        """ Starts the reaction test game """
         test_duration = 15.0
         margin        = 25
         bubble_radius = 15
@@ -321,6 +345,7 @@ class TappingTest():
             self.display.disp_circle(x, y, bubble_radius, fill = tuple(color))
             while True:
                 x_tap, y_tap = self.tsc2007.wait_for_tap()[:2]
+                
                 #Check if bubble is tapped 
                 if  x_tap < (x + bubble_radius*2) and x_tap > (x - bubble_radius*2) \
                 and y_tap < (y + bubble_radius*2) and y_tap > (y - bubble_radius*2):
@@ -360,7 +385,7 @@ class TappingTest():
             
     
     def rhythm_test(self):
-        
+        """ Starts the rhythm test game """
         self.display.clear()
         self.disp_instructions("rhythm")
     
@@ -384,12 +409,14 @@ class TappingTest():
         
         rhythm = []
         timing = []
-        
+        groups = 2
         #Generate a randomized rhythm
-        for group in range(2):
-            group_length = random.randint(2,4) 
+        for group in range(groups):
+            group_length = random.randint(2,4) #Number of notes in each group
             note_length = 0.1
-            pause_length = random.uniform(0.15,0.8)
+            pause_length = random.uniform(0.15,0.8) #Randomize tempo for the group
+            
+            #Record randomly generated rhythms  
             for note in range(group_length):
                 rhythm.append(note_length)
                 rhythm.append(pause_length)
@@ -439,51 +466,22 @@ class TappingTest():
             
     # End def
             
-            
-        """
-        tempo = 60
-        length = 10
-        self.buzzer.rhythm(tempo = tempo, length = length)
-        
-        periods = self.timer.get_periods()
-        times   = self.timer.get_times()
-        
-        print("Test Complete, here is your score (root mean square error, standard deviation, r coefficient)")
-        print(self.score(periods,times,tempo))
-        
-        time.sleep(2)
-        print("Press button again to restart test")
-        
-        while(not self.button.is_pressed()):
-            pass
-        """
     
     def cleanup(self):
+        """ Cleans up all the hardware and ends threads """
         self.button.cleanup()
         self.display.cleanup()
         self.tsc2007.cleanup()
         self.buzzer.cleanup()
+    # End def 
+
+# ------------------------------------------------------------------------
+# Main script
+# ------------------------------------------------------------------------
 
 if __name__ == '__main__':
     print("Program Start")
 
-    # Create instantiation of the lock
-    """
-    tap_test = TappingTest()
-    main_thread = threading.currentThread()
-    try:
-        # Run the lock
-        tap_test.run()
-
-    except KeyboardInterrupt:
-        # Clean up hardware when exiting
-        tap_test.cleanup()
-    
-    for t in threading.enumerate():
-        if t is not main_thread:
-            t.join()
-    """
-    
     tap_test = TappingTest()
     #tap_test.tsc2007.start()
     

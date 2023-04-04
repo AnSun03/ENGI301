@@ -31,6 +31,25 @@ OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 --------------------------------------------------------------------------
 
+TSC2007
+
+    This driver controls the TSC2007 touch screen controller
+
+Software API
+    start()
+        -Start an execution thread for TSC2007 (see run() function)
+        -Reads the location of all taps 
+        
+    tap_loc()
+        -Returns the x, y, and z (pressure) of the tap normalized by screen size
+    
+    wait_for_tap(function)
+        -Pauses the thread until a tap is detected, returning the touch location, duration, and function return value
+        -function: function to be called when screen is tapped
+    
+    cleanup()
+        -Stops the execution thread  
+
 """
 
 
@@ -57,7 +76,10 @@ class TSC2007(threading.Thread):
     disp_height = None
     stop        = None
     
-    def __init__(self, bus = 1, address = 0x48, irq_dio = None, disp_width = 320, disp_height = 240):
+    pressure_threshold = None
+    
+    def __init__(self, bus = 1, address = 0x48, irq_dio = None, disp_width = 320, 
+                 disp_height = 240, pressure_threshold = 80):
         self.bus         = bus
         self.address     = address
         self.irq_dio     = irq_dio
@@ -66,6 +88,7 @@ class TSC2007(threading.Thread):
         self.command     = "/usr/sbin/i2cset -y {0} {1}".format(bus, address)
         self.i2c         = board.I2C()
         self.stop        = False
+        self.pressure_threshold = pressure_threshold
 
         threading.Thread.__init__(self)
     
@@ -78,21 +101,22 @@ class TSC2007(threading.Thread):
     def run(self):
         while not self.stop:
             if self.tsc.touched:
-                self.point = self.tsc.touch
             
-                if self.point["pressure"] > 100:  
-                    x, y, z = self.tap_loc()
-                    #print("Touchpoint: (%d, %d, %d)" % (self.point["y"], self.point["x"], self.point["pressure"]))
-                    print("Touchpoint: (%d, %d, %d)" % (x, y, z))
-                
+                if self.point["pressure"] > self.pressure_threshold:  
+                    self.point = self.tsc.touch
+
+                    x, y, z = self.tap_loc() #z = pressure
                     
                     
     def tap_loc(self):
+        """ Returns the location of the last tap """
         if self.point is not None:
+            #Scale x and y by display size 
             y = (-self.point["x"] + MAX_Y)*self.disp_height/(MAX_Y-MIN_Y)
             x = (self.point["y"]  - MIN_X)*self.disp_width /(MAX_X-MIN_X)
             z = self.point["pressure"]
             
+            #Ensure bounds are not exceeded
             if y < 0: 
                 y = 0
             if y > self.disp_height:
@@ -108,15 +132,14 @@ class TSC2007(threading.Thread):
         
         
     def wait_for_tap(self, function = None):
-        pressure_threshold = 100
-        
+        """ Waits for a tap, upon which it returns the location and calls a function  """
         function_return_value = None
         while True:
             if self.tsc.touched:
                 self.point = self.tsc.touch
-                start_time = time.time()
+                start_time = time.time() #record when first tapped
             
-                if self.point["pressure"] > 100:  
+                if self.point["pressure"] > self.pressure_threshold:  
                     if function is not None:
                         function_return_value = function()
                     tap_dur = time.time() - start_time
@@ -141,41 +164,3 @@ if __name__ == '__main__':
     
     print("tapped")
     print("tapped")
-    """
-    ts.start()
-    
-    main_thread = threading.currentThread()
-    try:
-        while (True):
-            # Do nothing in the main thread
-            time.sleep(1)
-    except KeyboardInterrupt:
-        # Clean up the hardware
-        print("keyboard interrupt")
-    
-    for t in threading.enumerate():
-        if t is not main_thread:
-            t.join()
-            
-    print("Program End")
-    """
-    """
-    import board
-    import adafruit_tsc2007
-
-    # Use for I2C
-    i2c = board.I2C()  # uses board.SCL and board.SDA
-    # i2c = board.STEMMA_I2C()  # For using the built-in STEMMA QT connector on a microcontroller
-    
-    irq_dio = None  # don't use an irq pin by default
-    # uncomment for optional irq input pin so we don't continuously poll the I2C for touches
-    # irq_dio = digitalio.DigitalInOut(board.A0)
-    tsc = adafruit_tsc2007.TSC2007(i2c, irq=irq_dio)
-    
-    while True:
-        if tsc.touched:
-            point = tsc.touch
-            if point["pressure"] < 100:  # ignore touches with no 'pressure' as false
-                continue
-            print("Touchpoint: (%d, %d, %d)" % (point["x"], point["y"], point["pressure"]))
-    """

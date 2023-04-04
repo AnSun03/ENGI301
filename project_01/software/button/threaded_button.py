@@ -127,7 +127,7 @@ class ThreadedButton(threading.Thread):
     
     def __init__(self, pin=None, sleep_time=0.1, active_high=True):
         """ Initialize variables and set up the button """
-        self.debug = True
+        self.debug = False
         # Call parent class constructor
         threading.Thread.__init__(self)
         
