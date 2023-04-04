@@ -29,10 +29,10 @@ pip3 install adafruit-circuitpython-tsc2007
 ```
 ### Automatic Boot
 Setup for the program to run upon the PocketBeagle booting. In the command line: 
-'''
+```
 sudo crontab -e
 @reboot sleep 30 && bash /var/lib/cloud9/ENGI301/project_01/software/tap_test > /var/lib/cloud9/logs/chronlog 2>&1
-'''
+```
 
 ## Directories 
 ### tap_test - main program directory
