@@ -1,0 +1,10 @@
+Qty Value         Device        Package        Parts                              Description                                    
+1   0.1           R_R0603       R0603          R4                                 RESISTOR, American symbol                      
+3   10k           R_R0603       R0603          R1, R2, R3                         RESISTOR, American symbol                      
+1   BUZZER        BUZZER        BUZZER_6.5MM   U3                                 CEM-1203 Buzzer                                
+6   FIDUCIAL      FIDUCIAL      FIDUCIAL_40MIL FUD1, FUD2, FUD3, FUD4, FUD5, FUD6                                                
+4   MOUNTING_HOLE MOUNTING_HOLE MOUNTING_HOLE  MGT1, MGT2, MGT3, MGT4             Chassis Mounting Hole w/GND connection ability 
+1   POCKETBEAGLE  POCKETBEAGLE  POCKETBEAGLE   U1                                                                                
+1   PUSH_BUTTON   PUSH_BUTTON   BUTTON_12.5MM  SW1                                                                               
+1   TOUCHSCREEN   TOUCHSCREEN   TOUCHSCREEN    U2                                                                                
+1   TSC2007       TSC2007       TSC2007        U4                                                                                
